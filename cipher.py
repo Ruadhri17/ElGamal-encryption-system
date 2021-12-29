@@ -42,12 +42,28 @@ def findGeneratorBase(elements):
         else:
             base += 1
             testBase.clear()
+
 def generateKeys(p, q, g):
     x = randint(1, q - 1) # Private Key
     h = pow(g, x)
     publicKey = (p, q, g, h)
     privateKey = x
     return (publicKey, privateKey)
+
+def encryption(message, publicKey):
+    y = randint(1, publicKey[1] - 1) # 1 .. q - 1
+    s = pow(publicKey[3], y) # h^y
+    c1 = pow(publicKey[2], y) # g^y
+    c2 = message ^ s
+    return (c1, c2)
+
+def decryption(c1, c2, privateKey, group):
+    s = pow(c1, privateKey)
+    # compute inverse
+    inverse = pow(s, group - 2, group)
+    #compute m
+    m = c2 ^ inverse
+    return m
 
 def main():
     try:
@@ -61,9 +77,9 @@ def main():
     else:
         (group , order , generator) = cyclicGroupDescription(value)
         (publicKey, privateKey) = generateKeys(group, order, generator)
-        #encryption(message, publicKey)
-        #decryption(privateKey)
-        #return
+        (c1, c2) = encryption(43, publicKey)
+        message = decryption(c1, c2, privateKey, group)
+        print(message)
 
 if __name__ == "__main__":
     main()
