@@ -95,11 +95,11 @@ def decryption(encryptedBlocks, privateKey, group):
     return messageBlocks
 
 def convertMsgToBlocks(msg):
-    messageBlock = []
+    blocks = []
     for char in msg:
-        messageBlock.append(ord(char))
-    blocks = [messageBlock[i:i+16] for i in range (0, len(messageBlock), 16)]
-    return blocks
+        blocks.append(ord(char))
+    messageBlocks = [blocks[i:i+16] for i in range (0, len(blocks), 16)]
+    return messageBlocks
 
 def convertBlocksToMsg(messageBlocks):
     oneMessageBlock = []
@@ -119,27 +119,27 @@ def writeEnryptedMessage(encryptedBlocks):
     
 def main():
     
-    # read
+    # read plain text
     msg = open("plaintext.txt", "r").read()
-    
-    # convert
+    # convert into several blocks
     msgBlocks = convertMsgToBlocks(msg)
-
+    # choose prime number for cyclic group, number of bits can be chosen by user
     prime = choosePrime(1024)
     print("Generated Prime: ", prime)
-
+    # find order and generator of given cyclic group
     (group , order , generator) = cyclicGroupDescription(prime)
     print("Chosen generator: ", generator)
-
+    # generate public and private keys 
     (publicKey, privateKey) = generateKeys(group, order, generator)
-
+    # encrypt message blocks with public key
     encryptedBlocks = encryption(msgBlocks, publicKey)
-    
+    # write encrypted message to file
     writeEnryptedMessage(encryptedBlocks)
-
+    # decrypt message blocks with private key 
     messageBlocks = decryption(encryptedBlocks, privateKey, group)
-    
+    # convert messsage block to one message
     msg = convertBlocksToMsg(messageBlocks)
+    # write decrypted messsage to file 
     open("decryptedtext.txt", "w").write(msg)
 
 if __name__ == "__main__":
