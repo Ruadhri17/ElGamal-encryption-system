@@ -1,5 +1,4 @@
-from random import randint, choice, getrandbits, randrange
-from math import sqrt, gcd
+from random import randint, getrandbits, randrange
 
 def millerRabinTest(nr, nrOfTimes):
     if nr % 2 == 0:
@@ -45,12 +44,14 @@ def choosePrime(nrOfBits):
 def findPrimitiveRoot(p):
     if p == 2:
         return 1
-
+    #the prime divisors of p-1 are 2 and (p-1)/2 because p = 2x + 1 where x is a prime
     p1 = 2
     p2 = (p - 1) // p1
-
+    #test random g's until one is found that is a primitive root mod p
     while True:
         g = randint(2, p - 1)
+        #g is a primitive root if for all prime factors of p-1, p[i]
+        #g^((p-1)/p[i]) (mod p) is not congruent to 1
         if not (pow(g, (p - 1) // p1, p) == 1):
             if not (pow(g, (p - 1) // p2, p) == 1):
                 return g
@@ -69,22 +70,61 @@ def generateKeys(p, q, g):
     privateKey = x
     return (publicKey, privateKey)
 
-def encryption(message, publicKey, group):
-    y = randint(2, publicKey[1] - 1)
-    s = pow(publicKey[3], y, publicKey[0])
-    c1 = pow(publicKey[2], y, publicKey[0])
-    c2 = (message * s ) % publicKey[0]
-    return (c1, c2)
+def encryption(messageBlocks, publicKey):
+    encryptedBlocks = []
+    for block in messageBlocks:
+        encryptedPairs = []
+        y = randint(2, publicKey[1] - 1)
+        s = pow(publicKey[3], y, publicKey[0])
+        c1 = pow(publicKey[2], y, publicKey[0])
+        for element in block:
+            c2 = (element * s ) % publicKey[0]
+            encryptedPairs.append([c1,c2])
+        encryptedBlocks.append(encryptedPairs)
+    return encryptedBlocks
 
-def decryption(c1, c2, privateKey, group):
-    s = pow(c1, group - 1 - privateKey, group)
-    # Compute inverse
-    # inverse = pow(s, group - 2, group)
-    # Compute m
-    m = (c2 * s) % group
-    return m
+def decryption(encryptedBlocks, privateKey, group):
+    messageBlocks = []
+    for encryptedBlock in encryptedBlocks:
+        block = []
+        for pair in encryptedBlock:
+            s = pow(pair[0], group - 1 - privateKey, group)
+            m = (pair[1]* s) % group
+            block.append(m)
+        messageBlocks.append(block)
+    return messageBlocks
 
+def convertMsgToBlocks(msg):
+    messageBlock = []
+    for char in msg:
+        messageBlock.append(ord(char))
+    blocks = [messageBlock[i:i+16] for i in range (0, len(messageBlock), 16)]
+    return blocks
+
+def convertBlocksToMsg(messageBlocks):
+    oneMessageBlock = []
+    msg = ''
+    for block in messageBlocks:
+        oneMessageBlock += block
+    for element in oneMessageBlock:
+        msg += chr(element)
+    return msg
+    
+def writeEnryptedMessage(encryptedBlocks):
+    f = open("ciphertext.txt", "w")
+    for block in encryptedBlocks:
+        for element in block:
+            f.write(str(element[0]) + ' ' + str(element[1]) + ' ')
+    f.close
+    
 def main():
+    
+    # read
+    msg = open("plaintext.txt", "r").read()
+    
+    # convert
+    msgBlocks = convertMsgToBlocks(msg)
+
     prime = choosePrime(1024)
     print("Generated Prime: ", prime)
 
@@ -93,10 +133,14 @@ def main():
 
     (publicKey, privateKey) = generateKeys(group, order, generator)
 
-    (c1, c2) = encryption(1225429105280, publicKey, group)
+    encryptedBlocks = encryption(msgBlocks, publicKey)
+    
+    writeEnryptedMessage(encryptedBlocks)
 
-    message = decryption(c1, c2, privateKey, group)
-    print(message)
+    messageBlocks = decryption(encryptedBlocks, privateKey, group)
+    
+    msg = convertBlocksToMsg(messageBlocks)
+    open("decryptedtext.txt", "w").write(msg)
 
 if __name__ == "__main__":
     main()
