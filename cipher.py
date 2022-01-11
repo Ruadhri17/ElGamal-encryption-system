@@ -35,7 +35,7 @@ def fermatPrimalityTest(nr, nrOfTimes):
     # iterate nrOfTimes times
     for i in range(nrOfTimes):
         # Fermat's little theorem says that for every a (that 1 < a < nr-1)
-        # flowing equation is true: a^(n-1) % n = 1
+        # flowing equation is true: a^(nr-1) % nr = 1
         if pow(randint(2, nr - 2), nr - 1, nr) != 1:
             return False
     return True
