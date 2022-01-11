@@ -33,12 +33,12 @@
 
 \section{Description of the used algorithm}
 
-ElGamal is a public-key cryptosystem created in 1985 by Taher ElGamal that uses asymmetric key encryption algorithm. 
-Cryptosystem uses a method of protected exchange of keys through public network called Diffie-Hellman key exchange.
+ElGamal is a public-key cryptosystem created in 1985 by Taher ElGamal that uses an asymmetric key encryption algorithm. 
+Cryptosystem uses a protected exchange method through a public network called Diffie-Hellman key exchange.
 
-Cipher is based on the difficulty of solving discrete logarithms in a very big prime. 
-The advantage of the cryptosystem is that the same encrypted plaintext is each time a different ciphertext.
-However, as a disadvantage, ciphertext is much longer than plaintext.
+Cipher is based on solving discrete logarithms in a large prime. 
+The advantage of the cryptosystem is that the same encrypted plaintext is, each time, a different ciphertext.
+However, as a disadvantage, the ciphertext is much longer than plaintext.
 
 \section{Functional description of the application}
 
@@ -67,7 +67,7 @@ Alice having cipertext ($c_1, c_2$) from Bob and public key to decrypt message n
 
 \section{Description of designed code structure}
 \subsection{Generating large prime number}
-In order to generate a prime number, function \textbf{\textit{choosePrime}} is called. A loop haiterates until proper prime numer is found and returned. 
+In order to generate a prime number, function \textbf{\textit{choosePrime}} is called. A loop iterates until proper prime numer is found and returned. 
 During that process, first we reject all even numbers and then make two probabilistic tests for validity of prime number. Each test consists of 100 trials.
 \begin{lstlisting}[language=Python]
   def choosePrime(nrOfBits):
@@ -162,7 +162,9 @@ Instead we will find primitive root \textbf{\textit{r}} for prime \textbf{\texti
                     return g
 \end{lstlisting}
 After getting whole cyclic group description we can start with generating keys for ElGamal. 
-First we choose random value \textbf{\textit{x}} 
+First we choose random value \textbf{\textit{x}} which will be treated as private key. 
+After that we calculate \textbf{\textit{h}} value which will be used for encryption. 
+Calulcated \textbf{\textit{h}} with \textbf{\textit{p}}, \textbf{\textit{q}} and \textbf{\textit{g}} will be treated as public key. 
 \begin{lstlisting}[language=Python]
     def generateKeys(p, q, g):
         # choose random integer which will be treated 
@@ -172,48 +174,95 @@ First we choose random value \textbf{\textit{x}}
         h = pow(g, x, p) 
         publicKey = (p, q, g, h)
         privateKey = x
-     return (publicKey, privateKey)
+        return (publicKey, privateKey)
+\end{lstlisting} \newpage 
+As mentioned above, encryption uses public key. 
+We generate \textbf{\textit{y}} which is responsible for encryption calculations. 
+With its usage we calculated shared secret. 
+Encrypted message is kept in two pieces, in our code there are called \textbf{\textit{$c_1$}} and \textbf{\textit{$c_2$}}.
+We stored them as so-called pairs for future decryption.
+\begin{lstlisting}[language=Python]
+    def encryption(messageBlocks, publicKey):
+        p = publicKey[0] # Group (prime number)
+        q = publicKey[1] # order
+        g = publicKey[2] # generator
+        h = publicKey[3] 
+        encryptedBlocks = []
+        for block in messageBlocks:
+            encryptedPairs = []
+            # randomly selected y for future calculations
+            y = randint(2, q - 1)
+            # compute shared secret
+            s = pow(h, y, p)
+            # first part of cipher text
+            c1 = pow(g, y, p)
+            for sign in block:
+                #second part of cipher text
+                c2 = (sign * s ) % p
+                # keep both parts as a pair for decryption 
+                encryptedPairs.append([c1,c2])
+            #separate each block pairs 
+            encryptedBlocks.append(encryptedPairs)
+        return encryptedBlocks
 \end{lstlisting}
-
+Decryption takes private key and previously stored cipher pairs. We decrypt each block separately.
+As in encryption, shared secret is computed with the use of private key and $c_1$. Its inverse with $c_2$ decrypt the message.
+\begin{lstlisting}[language=Python]
+    def decryption(encryptedBlocks, privateKey, group):
+        messageBlocks = []
+        for encryptedBlock in encryptedBlocks:
+            block = []
+            for pair in encryptedBlock:
+                # compute inverse of shared secret as c1^(-x) mod p 
+                s = pow(pair[0], -1 * privateKey, group)
+                # decrypt message: c^2 * s mod p 
+                m = (pair[1]* s) % group
+                # add message to block
+                block.append(m)
+            # when whole block is decrypted, add to the rest of message blocks    
+            messageBlocks.append(block)
+        return messageBlocks
+\end{lstlisting}
 \subsection{Operations on blocks}
 
 When we read text from the plaintext.txt, characters are being parsed to ASCII code and separated into 16 element blocks.
 \begin{lstlisting}[language=Python]
-  def convertMsgToBlocks(msg):
-    blocks = []
-    for char in msg:
-        # convert char to nr
-        blocks.append(ord(char))
-    messageBlocks = [blocks[i:i+16] for i in range (0, len(blocks), 16)]
-    return messageBlocks  
+    def convertMsgToBlocks(msg):
+      blocks = []
+      for char in msg:
+          # convert char to nr
+          blocks.append(ord(char))
+      messageBlocks = [blocks[i:i+16] for i in range (0, len(blocks), 16)]
+      return messageBlocks  
 \end{lstlisting}
-After the decryption, blocks of numbers needs to be parsed to string and connected.
+\newpage
+After the decryption, blocks of numbers are parsed to strings and joined together.
 \begin{lstlisting}[language=Python]
-  def convertBlocksToMsg(messageBlocks):
-    # placeholder for msg block
-    oneMessageBlock = []
+    def convertBlocksToMsg(messageBlocks):
+      # placeholder for msg block
+      oneMessageBlock = []
 
-    # placeholder for msg
-    msg = ''
+      # placeholder for msg
+      msg = ''
 
-    for block in messageBlocks:
-        oneMessageBlock += block
+      for block in messageBlocks:
+          oneMessageBlock += block
 
-    for element in oneMessageBlock:
-        # convert nr to char
-        msg += chr(element)
-    return msg 
+      for element in oneMessageBlock:
+          # convert nr to char
+          msg += chr(element)
+      return msg 
 \end{lstlisting}
-When message was encrypted, function writes the blocks into the ciphertext.txt file.
+When a message was encrypted, function writes the encrypted blocks content as string into the ciphertext.txt file.
 \begin{lstlisting}[language=Python]
-  def writeEncryptedMessage(encryptedBlocks):
-    # open ciphertext with write flag
-    f = open("ciphertext.txt", "w")
+    def writeEncryptedMessage(encryptedBlocks):
+      # open ciphertext with write flag
+      f = open("ciphertext.txt", "w")
 
-    for block in encryptedBlocks:
-        for element in block:
-            f.write(str(element[0]) + ' ' + str(element[1]) + ' ')
-    f.close
+      for block in encryptedBlocks:
+          for element in block:
+              f.write(str(element[0]) + ' ' + str(element[1]) + ' ')
+      f.close
 \end{lstlisting}
 
 \section{Tests}
