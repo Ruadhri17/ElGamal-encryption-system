@@ -1,0 +1,9 @@
+\BOOKMARK [1][-]{section.1}{Description of the used algorithm}{}% 1
+\BOOKMARK [1][-]{section.2}{Functional description of the application}{}% 2
+\BOOKMARK [1][-]{section.3}{Description of designed code structure}{}% 3
+\BOOKMARK [2][-]{subsection.3.1}{Generating large prime number}{section.3}% 4
+\BOOKMARK [2][-]{subsection.3.2}{Key generation \046 Encryption \046 Decryption}{section.3}% 5
+\BOOKMARK [2][-]{subsection.3.3}{Operations on blocks}{section.3}% 6
+\BOOKMARK [1][-]{section.4}{Tests}{}% 7
+\BOOKMARK [2][-]{subsection.4.1}{Test for small prime}{section.4}% 8
+\BOOKMARK [2][-]{subsection.4.2}{Test for large prime}{section.4}% 9
